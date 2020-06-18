@@ -1,0 +1,110 @@
+function getSD_Logs_(po){
+  var data,entries,errMsg,errType,fnkName,httpRz,i,L,logs,nmbrOfEntriesToGet,options,param,parentParam,
+      row,sh,ss,thisLog,time,url,usr;
+  
+  /*
+    po.id = GCP project ID - https://console.cloud.google.com/home/dashboard
+    po.shName - Name of the sheet tab to log the data to
+  */
+  
+  /*
+    Get StackDriver Logs and write them to a Google Sheet -
+  
+  */
+  
+  /*
+    Your Apps Script project must be associated with a standard GCP project and the 
+    Cloud Logging API must be enabled - 
+    If you have not enabled the Cloud Logging API then you will get the error below - 
+  
+  */
+  
+  /*
+  Request failed for https://logging.googleapis.com returned code 403. 
+  "error": {
+    "code": 403,
+    "message": "Cloud Logging API has not been used in project 999 before or it is disabled. Enable it by visiting 
+    https://console.developers.google.com/apis/api/logging.googleapis.com/overview?project=999 then retry.
+    If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.",
+    "status": "PERMISSION_DENIED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.Help",
+        "links": [
+          {
+            "description": "Google developers console API activation",
+            "url": "https://console.developers.google.com/apis/api/logging.googleapis.com/overview?project=999"
+          }
+        ]
+      }
+    ]
+  }
+}
+  */
+  
+  param = 'projects/' + po.id;
+  url = "https://logging.googleapis.com/v2/entries:list";
+  nmbrOfEntriesToGet = 50;//Number of logs to get
+  
+  options = {};
+  
+  options.muteHttpExceptions = true;
+  options.headers = {Authorization: 'Bearer ' + ScriptApp.getOAuthToken()};
+  
+  options.contentType = "application/json";
+  options.method = 'post';
+  
+  options.payload = JSON.stringify({
+      resourceNames: [param],
+      orderBy: "timestamp desc",
+      pageSize: 50,
+    });
+
+  httpRz = UrlFetchApp.fetch(url,options);
+  //Logger.log(httpRz);
+  
+  if (httpRz.getResponseCode() !== 200) {
+    
+    return;
+  }
+  
+  logs = httpRz.getContentText();
+  //Logger.log('typeof logs: ' + typeof logs);
+  
+  logs = JSON.parse(logs);
+  
+  entries = logs.entries;
+  
+  //Logger.log('entries.length: ' + entries.length)
+  //Logger.log('typeof entries: ' + typeof entries)
+  
+  ss = SpreadsheetApp.getActiveSpreadsheet();
+  sh = ss.getSheetByName(po.shName);
+  
+  row = sh.getLastRow();
+  //Logger.log('row: ' + row)
+  L = entries.length;
+  
+  data = [];
+  
+  for (i=0;i<L;i++) {
+    thisLog = entries[i];
+    errType = thisLog.severity;
+    fnkName = thisLog.resource.labels.function_name;
+    errMsg = thisLog.jsonPayload.message;
+    time = thisLog.receiveTimestamp;
+    usr = thisLog.labels["script.googleapis.com/user_key"];
+    
+    data.push([errType + " " + time,fnkName,errMsg,usr]);
+  }
+
+  sh.getRange(row + 1, 1, data.length, data[0].length).setValues(data);
+  
+}
+
+
+function testDownload() {
+  
+  getSD_Logs_({"id":"project-id-","shName":"StackDriver Logs"});
+  
+}
