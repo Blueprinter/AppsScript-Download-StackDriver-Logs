@@ -1,0 +1,43 @@
+function deleteStackDriverLogs(po) {
+  var endpoint,httpRz,logName,obj,options,token,url;
+  
+  /*
+    po.id = GCP project ID - https://console.cloud.google.com/home/dashboard
+  */
+    
+  token = ScriptApp.getOAuthToken();
+  
+  endpoint = 'https://logging.googleapis.com/v2/projects/' + po.id + '/logs';
+  
+  options = {};
+  
+  options.headers = {Authorization: 'Bearer ' + token};
+  
+  httpRz = UrlFetchApp.fetch(endpoint, options);
+  
+  obj = JSON.parse(httpRz.getContentText());
+  
+  //Logger.log('obj.logNames: ' + obj.logNames)
+  
+  logName = obj.logNames.filter(e => e.includes("console_logs"))[0];
+  //Logger.log('logName: ' + logName)
+      
+  options.method = "delete";
+  options.muteHttpExceptions = true;
+  options.headers = {Authorization: 'Bearer ' + token};
+
+  url = 'https://logging.googleapis.com/v2/' + logName;  
+  
+  httpRz = UrlFetchApp.fetch(url,options);
+  Logger.log('response code: ' + httpRz.getResponseCode());
+
+  //Logger.log('httpRz.getAllHeaders(): ' + JSON.stringify(httpRz.getAllHeaders()))
+  //Logger.log(httpRz.getContentText())
+
+}
+
+function testDlet() {
+  deleteStackDriverLogs({"id":"project-id-your-id-goes-here"});
+  
+  
+}
