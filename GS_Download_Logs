@@ -1,5 +1,5 @@
-function getSD_Logs_(po){
-  var data,entries,errMsg,errType,fnkName,httpRz,i,L,logs,nmbrOfEntriesToGet,options,param,parentParam,
+function exportStackdriverLogs(po){
+  var data,entries,errMsg,errType,fnkName,httpRz,i,L,load,logs,nmbrOfEntriesToGet,options,param,parentParam,
       row,sh,ss,thisLog,time,url,usr;
   
   /*
@@ -54,12 +54,15 @@ function getSD_Logs_(po){
   options.contentType = "application/json";
   options.method = 'post';
   
-  options.payload = JSON.stringify({
-      resourceNames: [param],
-      orderBy: "timestamp desc",
-      pageSize: 50,
-    });
-
+  load = {};
+  load.resourceNames = [param];
+  load.orderBy = "timestamp desc";
+  load.filter = 'resource.type="app_script_function"';//Only get logs that
+     //came from Apps Script 
+  load.pageSize = 1;//You will probably want more than 1 but this is for an example
+  
+  options.payload = JSON.stringify(load);
+  
   httpRz = UrlFetchApp.fetch(url,options);
   //Logger.log(httpRz);
   
